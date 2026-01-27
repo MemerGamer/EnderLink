@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  enderlink:
+    # Build from source (default):
+    build: .
+    # Or use pre-built image from Docker Hub:
+    # image: kbalinthunor/enderlink:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount your config directory
+      - ./config:/config:ro
+    environment:
+      # Optional: override environment variables
+      # ENDERLINK_CONFIG_DIR: /config
+      # ENDERLINK_CONFIG_FILE: config.yaml
+      PORT: 3000
+    restart: unless-stopped

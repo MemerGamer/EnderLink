@@ -1,0 +1,57 @@
+title: "EnderLink Server Dashboard"
+pollIntervalMs: 5000
+
+links:
+  - title: "Discord"
+    url: "https://discord.gg/example"
+  - title: "Rules"
+    url: "https://example.com/rules"
+  - title: "Store"
+    url: "https://store.example.com"
+
+# Optional custom message box
+message:
+  title: "Welcome!"
+  content: "Join our community Discord for updates and support. All servers are running smoothly!"
+  type: "info"  # Options: info, warning, success, error
+
+servers:
+  - id: "survival"
+    displayName: "Survival Server"
+    description: "Our main survival world"
+    host: "mc.example.com"
+    port: 25565
+    version: "1.20.1"
+    bluemapUrl: "https://map.example.com"
+    websiteUrl: "https://example.com"
+    tags:
+      - "survival"
+      - "vanilla"
+    private: false
+
+  - id: "creative"
+    displayName: "Creative Server"
+    description: "Build and create freely"
+    host: "creative.example.com"
+    port: 25565
+    tags:
+      - "creative"
+      - "building"
+    private: false
+
+  - id: "pvp"
+    displayName: "PvP Arena"
+    description: "Test your combat skills"
+    host: "pvp.example.com"
+    port: 25566
+    tags:
+      - "pvp"
+      - "competitive"
+    private: false
+
+  - id: "private-test"
+    displayName: "Private Test Server"
+    description: "Internal testing server"
+    host: "private.example.com"
+    port: 25565
+    private: true
