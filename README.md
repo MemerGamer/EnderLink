@@ -2,6 +2,9 @@
 
 A "Homer-style" reusable Minecraft welcome dashboard built with TanStack Start. EnderLink provides a public, read-only dashboard showing server status, player counts, versions, MOTD, and optional links.
 
+![EnderLink](demo.png)
+
+
 ## Features
 
 - **Server Status Monitoring**: Real-time status for multiple Minecraft servers
