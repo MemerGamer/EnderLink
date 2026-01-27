@@ -285,7 +285,7 @@ function Dashboard() {
                 )}
 
                 <div className="flex gap-2">
-                  {server.bluemapUrl && (
+                  {server.bluemapUrl && !server.private && (
                     <a
                       href={server.bluemapUrl}
                       target="_blank"
