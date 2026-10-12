@@ -122,6 +122,7 @@ servers:
 
 - `title` (string, required): Dashboard title displayed at the top
 - `pollIntervalMs` (number, 1000-60000, default: 5000): How often to poll servers (milliseconds)
+- `hideOffline` (boolean, default: false): Hide servers that are currently offline (totals still count them)
 - `links` (array, optional): Global links shown in the navbar
   - `title` (string, required): Link display name
   - `url` (URL, required): Link URL

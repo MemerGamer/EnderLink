@@ -29,6 +29,7 @@ const messageSchema = z.object({
 export const configSchema = z.object({
   title: z.string().min(1),
   pollIntervalMs: z.number().int().min(1000).max(60000).default(5000),
+  hideOffline: z.boolean().optional().default(false),
   links: z.array(linkSchema).optional().default([]),
   message: messageSchema.optional(),
   servers: z.array(serverSchema).min(1),

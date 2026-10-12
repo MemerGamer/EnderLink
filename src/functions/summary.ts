@@ -85,9 +85,10 @@ function toSummary(server: Server, status: ServerStatus): ServerSummary {
 async function buildSummary(): Promise<SummaryResponse> {
   const config = await loadConfig()
 
-  const servers = await Promise.all(
+  const allServers = await Promise.all(
     config.servers.map(async (server) => toSummary(server, await getServerStatus(server))),
   )
+  const servers = config.hideOffline ? allServers.filter((s) => s.online) : allServers
   servers.sort((a, b) => {
     if (a.online !== b.online) {
       return a.online ? -1 : 1
@@ -104,7 +105,7 @@ async function buildSummary(): Promise<SummaryResponse> {
     pollIntervalMs: config.pollIntervalMs,
     totals: {
       serversOnline,
-      serverCount: servers.length,
+      serverCount: allServers.length,
       playersOnline,
     },
     links: config.links || [],

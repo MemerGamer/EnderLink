@@ -1,5 +1,6 @@
 title: "EnderLink Server Dashboard"
 pollIntervalMs: 5000
+hideOffline: false  # true = do not list servers that are currently offline
 
 links:
   - title: "Discord"
