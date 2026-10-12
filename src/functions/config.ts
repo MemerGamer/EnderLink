@@ -1,11 +1,12 @@
-import { createServerFn } from '@tanstack/react-start'
+import { createServerOnlyFn } from '@tanstack/react-start'
 import { configSchema, type Config } from '../config/schema'
 
 let cachedConfig: Config | null = null
 let cachedMtime: number = 0
 let cachedPath: string | null = null
 
-export const loadConfigFn = createServerFn({ method: 'GET' }).handler(async () => {
+// Server-only: the raw config contains private server hosts and must never be sent to the client.
+export const loadConfig = createServerOnlyFn(async (): Promise<Config> => {
   const { createRequire } = await import('node:module')
   const require = createRequire(import.meta.url)
   const fs = require('node:fs')
@@ -51,5 +52,5 @@ export const loadConfigFn = createServerFn({ method: 'GET' }).handler(async () =
     }
   }
 
-  return cachedConfig
+  return cachedConfig!
 })

@@ -1,18 +1,30 @@
 import { createServerFn } from '@tanstack/react-start'
-import { loadConfigFn } from './config'
-import { getServerStatusFn, type ServerStatus } from './minecraft'
+import { loadConfig } from './config'
+import { getServerStatus } from './minecraft'
+import type { Server } from '../config/schema'
+import type { ServerStatus } from './minecraft'
 
-export interface ServerSummary extends Omit<ServerStatus, 'version'> {
+// Everything in here is sent to the browser. Private servers only get the fields
+// below the first block; connection details and live probe data are omitted.
+export interface ServerSummary {
   id: string
   displayName: string
   description?: string
-  host: string
   version?: string
-  port: number
-  bluemapUrl?: string
-  websiteUrl?: string
   tags: string[]
   private: boolean
+  online: boolean
+  playersOnline: number
+  playersMax: number
+  // Public servers only
+  host?: string
+  port?: number
+  bluemapUrl?: string
+  websiteUrl?: string
+  motd?: string
+  icon?: string
+  latencyMs?: number
+  error?: string
 }
 
 export interface Link {
@@ -29,6 +41,7 @@ export interface Message {
 export interface SummaryResponse {
   title: string
   updatedAt: string
+  pollIntervalMs: number
   totals: {
     serversOnline: number
     serverCount: number
@@ -39,37 +52,42 @@ export interface SummaryResponse {
   servers: ServerSummary[]
 }
 
-let cachedSummary: SummaryResponse | null = null
-let cachedUntil: number = 0
-
-export const getSummaryFn = createServerFn({ method: 'GET' }).handler(async () => {
-  const now = Date.now()
-
-  if (cachedSummary && now < cachedUntil) {
-    return cachedSummary
+function toSummary(server: Server, status: ServerStatus): ServerSummary {
+  const base: ServerSummary = {
+    id: server.id,
+    displayName: server.displayName,
+    description: server.description,
+    tags: server.tags || [],
+    private: server.private || false,
+    online: status.online,
+    playersOnline: status.playersOnline,
+    playersMax: status.playersMax,
   }
 
-  const config = await loadConfigFn()
-  const pollIntervalMs = config.pollIntervalMs
+  if (server.private) {
+    return { ...base, version: server.version }
+  }
 
-  const serverPromises = config.servers.map(async (server) => {
-    const status = await getServerStatusFn({ data: { server } })
-    return {
-      ...status,
-      id: server.id,
-      displayName: server.displayName,
-      description: server.description,
-      host: server.host,
-      port: server.port,
-      version: server.version || status.version,
-      bluemapUrl: server.bluemapUrl,
-      websiteUrl: server.websiteUrl,
-      tags: server.tags || [],
-      private: server.private || false,
-    } as ServerSummary
-  })
+  return {
+    ...base,
+    version: server.version || status.version,
+    host: server.host,
+    port: server.port,
+    bluemapUrl: server.bluemapUrl,
+    websiteUrl: server.websiteUrl,
+    motd: status.motd,
+    icon: status.icon,
+    latencyMs: status.latencyMs,
+    error: status.error,
+  }
+}
 
-  const servers = await Promise.all(serverPromises)
+async function buildSummary(): Promise<SummaryResponse> {
+  const config = await loadConfig()
+
+  const servers = await Promise.all(
+    config.servers.map(async (server) => toSummary(server, await getServerStatus(server))),
+  )
   servers.sort((a, b) => {
     if (a.online !== b.online) {
       return a.online ? -1 : 1
@@ -80,9 +98,10 @@ export const getSummaryFn = createServerFn({ method: 'GET' }).handler(async () =
   const serversOnline = servers.filter((s) => s.online).length
   const playersOnline = servers.reduce((sum, s) => sum + s.playersOnline, 0)
 
-  const summary: SummaryResponse = {
+  return {
     title: config.title,
     updatedAt: new Date().toISOString(),
+    pollIntervalMs: config.pollIntervalMs,
     totals: {
       serversOnline,
       serverCount: servers.length,
@@ -92,15 +111,29 @@ export const getSummaryFn = createServerFn({ method: 'GET' }).handler(async () =
     message: config.message,
     servers,
   }
+}
 
-  cachedSummary = summary
-  cachedUntil = now + pollIntervalMs
+let cachedSummary: SummaryResponse | null = null
+let cachedUntil: number = 0
+let inFlight: Promise<SummaryResponse> | null = null
 
-  return summary
-})
+// Every visitor polls this, so all of them share one probe per poll interval.
+export const getSummaryFn = createServerFn({ method: 'GET' }).handler(async () => {
+  if (cachedSummary && Date.now() < cachedUntil) {
+    return cachedSummary
+  }
 
-export const clearSummaryCacheFn = createServerFn({ method: 'POST' }).handler(async () => {
-  cachedSummary = null
-  cachedUntil = 0
-  return { success: true }
+  if (!inFlight) {
+    inFlight = buildSummary()
+      .then((summary) => {
+        cachedSummary = summary
+        cachedUntil = Date.now() + summary.pollIntervalMs
+        return summary
+      })
+      .finally(() => {
+        inFlight = null
+      })
+  }
+
+  return inFlight
 })

@@ -2,13 +2,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Copy, ExternalLink, Lock, Globe, Server, Users, Clock, Activity, Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { getSummaryFn, clearSummaryCacheFn, type ServerSummary } from '../functions/summary'
+import { getSummaryFn, type ServerSummary } from '../functions/summary'
 
 export const Route = createFileRoute('/')({
-  loader: async () => {
-    await clearSummaryCacheFn()
-    return await getSummaryFn()
-  },
+  loader: () => getSummaryFn(),
   component: Dashboard,
 })
 
@@ -20,9 +17,9 @@ function Dashboard() {
   useEffect(() => {
     const interval = setInterval(() => {
       router.invalidate()
-    }, 5000)
+    }, data.pollIntervalMs)
     return () => clearInterval(interval)
-  }, [router])
+  }, [router, data.pollIntervalMs])
 
   const copyToClipboard = async (text: string, serverId: string) => {
     try {
@@ -45,7 +42,7 @@ function Dashboard() {
     }
   }
 
-  const joinAddress = (server: ServerSummary) => `${server.host}${server.port !== 25565 ? `:${server.port}` : ''}`
+  const joinAddress = (server: ServerSummary) => `${server.host}${server.port && server.port !== 25565 ? `:${server.port}` : ''}`
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-x-hidden">
@@ -227,7 +224,7 @@ function Dashboard() {
                       <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{server.version}</div>
                     </div>
                   )}
-                  {server.online && (
+                  {server.online && server.latencyMs !== undefined && (
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
                       <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Ping</div>
                       <div className="text-lg font-bold text-slate-900 dark:text-white">{server.latencyMs}ms</div>
@@ -242,7 +239,7 @@ function Dashboard() {
                   </div>
                 )}
 
-                {server.online && !server.private && (
+                {server.online && !server.private && server.host && (
                   <div className="mb-4">
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
                       <code className="flex-1 text-sm text-slate-900 dark:text-slate-100 font-mono truncate">
